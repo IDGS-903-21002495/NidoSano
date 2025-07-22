@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "252623235263",
+    "project_id": "nidosano-62250",
+    "storage_bucket": "nidosano-62250.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:252623235263:android:9ffd97410e37e84ad9be0a",
+        "android_client_info": {
+          "package_name": "com.modulap.nidosano"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBmSidmqjf_zfIO8a1OCDxtRbFO7onZW9k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
