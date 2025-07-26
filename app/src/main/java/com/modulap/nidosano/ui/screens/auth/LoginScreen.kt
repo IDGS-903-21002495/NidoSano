@@ -35,6 +35,16 @@ import androidx.compose.ui.platform.LocalContext
 import com.google.firebase.firestore.firestore
 import com.modulap.nidosano.ui.navigation.Routes
 
+// Importaciones adicionales para ClickableText
+import androidx.compose.foundation.text.ClickableText
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+
+
 @Composable
 fun LoginScreen(navController: NavHostController) {
     var email by remember { mutableStateOf("") }
@@ -45,7 +55,6 @@ fun LoginScreen(navController: NavHostController) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(White)
             .padding(32.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -146,6 +155,40 @@ fun LoginScreen(navController: NavHostController) {
                         }
                 }
             )
+
+            // Nuevo ClickableText para "Crear cuenta"
+            // padding top for the space between the button and the text.
+            val annotatedString = buildAnnotatedString {
+                withStyle(style = SpanStyle(color = TextGray)) {
+                    append("¿No tienes una cuenta? ")
+                }
+                // Attach a string annotation that stores a URL to the text "Crear cuenta".
+                // This annotation will be used to identify the clickable part.
+                pushStringAnnotation(tag = "CREATE_ACCOUNT", annotation = "create_account_route")
+                withStyle(style = SpanStyle(color = OrangePrimary, fontWeight = FontWeight.Bold)) {
+                    append("Crear cuenta")
+                }
+                pop()
+            }
+
+            ClickableText(
+                text = annotatedString,
+                onClick = { offset ->
+                    val annotation = annotatedString.getStringAnnotations(tag = "CREATE_ACCOUNT", start = offset, end = offset)
+                        .firstOrNull()
+                    if (annotation != null) {
+                        navController.navigate(Routes.Register)
+                    }
+                },
+                modifier = Modifier.padding(top = 16.dp)
+            )
         }
     }
+}
+
+
+@Preview
+@Composable
+fun LoginPreview(){
+    LoginScreen(navController = NavHostController(LocalContext.current))
 }

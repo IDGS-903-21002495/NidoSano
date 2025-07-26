@@ -1,6 +1,8 @@
 package com.modulap.nidosano.ui.components
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
@@ -10,28 +12,28 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import com.modulap.nidosano.ui.theme.OrangePrimary
+import com.modulap.nidosano.ui.theme.White
 
 @Composable
-fun ButtonPrimary(
-    text: String,
-    onClick: () -> Unit,
-    cornerRadius: Dp = 8.dp,
-    paddingHorizontal: Dp = 16.dp,
-    paddingVertical: Dp = 14.dp
-) {
+fun ButtonPrimary(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Button(
         onClick = onClick,
-        shape = RoundedCornerShape(cornerRadius),
-        contentPadding = PaddingValues(
-            horizontal = paddingHorizontal,
-            vertical = paddingVertical
-        ),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = OrangePrimary,
-            contentColor = Color.White
-        )
+        modifier = modifier
+            .fillMaxWidth()
+            .height(50.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
     ) {
-        Text(text = text, style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = text,
+            color = White,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }

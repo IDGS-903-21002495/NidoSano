@@ -8,7 +8,8 @@ val OrangeSecondary = Color(0xFFFFA451)
 val BackgroundCream = Color(0xFFFDB580)
 val BackgroundLight = Color(0xFFFFE8D6)
 val White = Color(0xFFFFFFFF)
-
+val RedDanger = Color(0xFFE53935)
+val GreenSuccess = Color(0xFF4CAF50)
 // Texto
 val TextPrimary = Color(0xFF212121)
 val TextTitleOrange = Color(0xFFC24E00)

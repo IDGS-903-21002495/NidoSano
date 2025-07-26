@@ -11,38 +11,41 @@ import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
 
 
-val Nunito = FontFamily(
-    Font(
-        googleFont = GoogleFont("Nunito"),
-        weight = FontWeight.Normal,
-        style = FontStyle.Normal,
-        fontProvider = GoogleFont.Provider(
-            providerAuthority = "com.google.android.gms.fonts",
-            providerPackage = "com.google.android.gms",
-            certificates = R.array.com_google_android_gms_fonts_certs
-        )
-    )
+val provider = GoogleFont.Provider(
+    providerAuthority = "com.google.android.gms.fonts",
+    providerPackage = "com.google.android.gms",
+    certificates = R.array.com_google_android_gms_fonts_certs
 )
 
+val nunitoFont = GoogleFont("Nunito")
+
+val Nunito = FontFamily(
+    Font(googleFont = nunitoFont, fontProvider = provider, weight = FontWeight.Normal),
+    Font(googleFont = nunitoFont, fontProvider = provider, weight = FontWeight.Medium),
+    Font(googleFont = nunitoFont, fontProvider = provider, weight = FontWeight.Bold),
+    Font(googleFont = nunitoFont, fontProvider = provider, weight = FontWeight.Black)
+)
 
 val AppTypography = Typography(
     headlineLarge = TextStyle(
         fontFamily = Nunito,
         fontWeight = FontWeight.Black,
-        fontSize = 28.sp
+        fontSize = 26.sp // antes 28.sp
     ),
     titleLarge = TextStyle(
         fontFamily = Nunito,
         fontWeight = FontWeight.Bold,
-        fontSize = 24.sp
+        fontSize = 20.sp // antes 24.sp
     ),
     titleMedium = TextStyle(
         fontFamily = Nunito,
         fontWeight = FontWeight.Medium,
-        fontSize = 20.sp
+        fontSize = 16.sp // antes 20.sp
     ),
     bodyMedium = TextStyle(
         fontFamily = Nunito,
-        fontSize = 18.sp
+        fontWeight = FontWeight.Normal,
+        fontSize = 14.sp // antes 18.sp
     )
 )
+

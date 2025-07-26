@@ -1,5 +1,7 @@
 package com.modulap.nidosano.ui.screens.monitoring
 
+import SensorCard
+import android.annotation.SuppressLint
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
@@ -18,131 +20,180 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.modulap.nidosano.R
 import com.modulap.nidosano.data.repository.MQTTManagerHiveMQ
 import com.modulap.nidosano.ui.components.ButtonPrimary
-import com.modulap.nidosano.ui.components.SensorCard
-import com.modulap.nidosano.ui.theme.OrangeSecondary
+import com.modulap.nidosano.ui.theme.OrangePrimary
+import com.modulap.nidosano.ui.theme.TextGray
 import com.modulap.nidosano.ui.theme.TextTitleOrange
-
+import androidx.lifecycle.viewmodel.compose.viewModel // Importar viewModel
+import androidx.navigation.compose.rememberNavController
+import com.modulap.nidosano.viewmodel.SharedMqttViewModel // Importar SharedMqttViewModel
 
 @RequiresApi(Build.VERSION_CODES.N)
 @Composable
-fun MonitoringScreen(navController: NavHostController) {
+fun MonitoringScreen(
+    navController: NavHostController,
+    viewModel: SharedMqttViewModel = viewModel() // Inyecta SharedMqttViewModel aquí
+) {
     var currentRoute by remember { mutableStateOf("home") }
     val context = LocalContext.current
 
-    var temperature by remember { mutableStateOf("–") }
-    var humidity by remember { mutableStateOf("–") }
-    var air_quality by remember { mutableStateOf("–") }
-    var lighting_level by remember { mutableStateOf("–") }
+    // --- Observa los StateFlows del SharedMqttViewModel ---
+    val temperature by viewModel.temperature.collectAsState()
+    val humidity by viewModel.humidity.collectAsState()
+    val airQuality by viewModel.airQuality.collectAsState()
+    val lightingLevel by viewModel.lightingLevel.collectAsState()
+    val connectionStatus by viewModel.connectionStatus.collectAsState()
 
-    LaunchedEffect(Unit) {
-        MQTTManagerHiveMQ.conectar { topic, value ->
-            when (topic) {
-                "temperature" -> temperature = "$value°C"
-                "humidity" -> humidity = "$value%"
-                "air_quality" -> air_quality = value
-                "lighting_level" -> lighting_level = value
-            }
+    // Envuelto en remember para asegurar que se recalcule cuando connectionStatus cambie
+    val generalStatusMessage = remember(connectionStatus) {
+        Log.d("MonitoringScreen", "Calculating generalStatusMessage for status: $connectionStatus")
+        when (connectionStatus) {
+            MQTTManagerHiveMQ.ConnectionState.CONNECTED -> "Todo en orden"
+            MQTTManagerHiveMQ.ConnectionState.CONNECTING -> "Conectando al gallinero..."
+            MQTTManagerHiveMQ.ConnectionState.DISCONNECTED -> "Desconectado del gallinero."
+            MQTTManagerHiveMQ.ConnectionState.ERROR -> "Error de conexión con el gallinero."
         }
+    }
+
+    // Lógica para el color del mensaje de estado general
+    val generalStatusColor = remember(connectionStatus) {
+        when (connectionStatus) {
+            MQTTManagerHiveMQ.ConnectionState.CONNECTED -> OrangePrimary
+            else -> TextGray // O un color de advertencia si prefieres para desconectado/error
+        }
+    }
+
+    // ** OTRO PUNTO CLAVE DE DEPURACIÓN **
+    LaunchedEffect(connectionStatus) {
+        // Este efecto se lanzará cada vez que connectionStatus cambie
+        Log.d("MonitoringScreen", "LaunchedEffect: connectionStatus changed to $connectionStatus. Displayed message: $generalStatusMessage")
     }
 
     Scaffold(
-        modifier = Modifier.background(Color.White),
         bottomBar = {
             BottomNavBar(currentRoute = currentRoute) { route ->
                 currentRoute = route
-                Log.d("BottomNav", "Seleccionado: $route")
-
+                navController.navigate(route) {
+                    launchSingleTop = true
+                    restoreState = true
+                    popUpTo(navController.graph.startDestinationId) {
+                        saveState = true
+                    }
+                }
             }
         }
     ) { paddingValues ->
-        Column (
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ){
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Gallinero",
-                style = MaterialTheme.typography.titleLarge,
-                color = TextTitleOrange
-            )
-
-            // Estado general
-            Text(
-                text = "Todo en orden",
-                style = MaterialTheme.typography.bodyLarge,
-                color = OrangeSecondary
-            )
-
-            Spacer(modifier = Modifier.height(42.dp))
-
-            // Botón de historial
-            ButtonPrimary(
-                text = "Ver historial",
-                onClick = {
-
-                }
-            )
-
-            // Imagen del gallinero
-            Image(
-                painter = painterResource(id = R.drawable.granja),
-                contentDescription = "Gallinero",
-                modifier = Modifier.height(120.dp)
-            )
-
-            Spacer(modifier = Modifier.height(42.dp))
-
-            // Tarjetas de sensores
-            Column {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    SensorCard("Temperatura", temperature, R.drawable.gallina)
-                    SensorCard("Humedad", humidity, R.drawable.gallina)
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    SensorCard("Calidad del aire", air_quality, R.drawable.granja)
-                    SensorCard("Iluminación", lighting_level, R.drawable.granja)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(36.dp))
-
-            // Advertencia
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(4.dp),
-                modifier = Modifier.fillMaxWidth()
+                .background(Color.White)
+        ) {
+            // Top Bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Text(
-                        "Actividad inusual detectada en el gallinero.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Black
-                    )
-                    Text(
-                        "Se detectó movimiento fuera del horario habitual.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                    Text(
-                        "9:00AM",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.Gray,
-                        modifier = Modifier.align(Alignment.End)
+                Text(
+                    text = "Gallinero",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = TextTitleOrange,
+                    modifier = Modifier.padding(start = 16.dp)
+                )
+
+                // Spacer para empujar el icono de perfil a la derecha
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Icono de perfil (derecha)
+                IconButton(onClick = { navController.navigate("profile") }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.circulo_de_usuario),
+                        contentDescription = "Perfil",
+                        tint = TextGray,
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            // Contenido principal de la pantalla de monitoreo
+            Column (
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp), // Mantener el padding horizontal para el contenido
+                horizontalAlignment = Alignment.CenterHorizontally
+            ){
+                Text(
+                    text = "Recuerda revisar los bebederos si la temperatura supera los 30 °C",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.DarkGray,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
 
+                // Espacio entre la recomendación y el botón "Ver historial"
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ){
+                    // Botón de historial
+                    ButtonPrimary(
+                        text = "Ver historial",
+                        onClick = {
+                            navController.navigate("history")
+                        },
+                        modifier = Modifier.fillMaxWidth(0.7f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(42.dp))
+
+                // Imagen del gallinero
+                Image(
+                    painter = painterResource(id = R.drawable.gan2),
+                    contentDescription = "Gallinero",
+                    modifier = Modifier
+                        .height(160.dp)
+                        .padding(vertical = 8.dp)
+                )
+
+                Spacer(modifier = Modifier.height(42.dp))
+
+                // Tarjetas de sensores
+                Column (
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ){
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        SensorCard("Temperatura", temperature, R.drawable.temperatura_alta)
+                        SensorCard("Humedad", humidity, R.drawable.punto_de_rocio)
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        SensorCard("Calidad del aire", airQuality, R.drawable.calor) // Usar airQuality
+                        SensorCard("Iluminación", lightingLevel, R.drawable.eclipse) // Usar lightingLevel
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(36.dp))
+            }
         }
     }
+}
+
+@SuppressLint("ViewModelConstructorInComposable")
+@RequiresApi(Build.VERSION_CODES.N)
+@Preview(showBackground = true)
+@Composable
+fun MonitoringScreenPreview() {
+    MonitoringScreen(navController = rememberNavController(), viewModel = SharedMqttViewModel())
 }

@@ -32,10 +32,10 @@ fun BottomNavBar(
 ) {
     val items = listOf(
         NavItem("home", R.drawable.granja),
-        NavItem("seguridad", R.drawable.verificacion_de_escudo),
-        NavItem("notificaciones", R.drawable.campana),
-        NavItem("plantas", R.drawable.trigo),
-        NavItem("gallinas", R.drawable.gallina)
+        NavItem("security", R.drawable.verificacion_de_escudo),
+        NavItem("notification", R.drawable.campana),
+        NavItem("feeding", R.drawable.trigo),
+        NavItem("tips", R.drawable.gallina)
     )
 
     NavigationBar(

@@ -63,7 +63,7 @@ fun SplashScreen(navController: NavHostController){
             )
 
             Text(
-                "Nido sano",
+                "NidoSano",
                 color = White,
                 style = MaterialTheme.typography.headlineLarge,
                 modifier = Modifier.padding(top = 20.dp),
