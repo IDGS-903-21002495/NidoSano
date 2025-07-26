@@ -19,7 +19,7 @@ import com.modulap.nidosano.ui.theme.OrangePrimary
 import com.modulap.nidosano.ui.theme.White
 
 @Composable
-fun ButtonPrimary(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun ButtonPrimary(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
     Button(
         onClick = onClick,
         modifier = modifier
@@ -27,7 +27,8 @@ fun ButtonPrimary(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
             .height(50.dp),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+        enabled = enabled
     ) {
         Text(
             text = text,
