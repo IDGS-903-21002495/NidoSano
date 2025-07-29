@@ -118,7 +118,7 @@ fun ProfileScreen(
             ProfileMenuItem(
                 icon = Icons.Filled.Edit,
                 text = "Editar perfil",
-                onClick = { /* TODO: Navegar a pantalla de editar perfil */ }
+                onClick = { navController.navigate("edit_profile")}
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -132,7 +132,7 @@ fun ProfileScreen(
             ProfileMenuItem(
                 icon = Icons.Filled.Lock,
                 text = "Cambiar contraseña",
-                onClick = { /* TODO: Navegar a pantalla de cambiar contraseña */ }
+                onClick = {navController.navigate("edit_password") }
             )
             Spacer(modifier = Modifier.height(16.dp))
 

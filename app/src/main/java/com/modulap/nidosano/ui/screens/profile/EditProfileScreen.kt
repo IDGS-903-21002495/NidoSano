@@ -1,8 +1,8 @@
 package com.modulap.nidosano.ui.screens.profile
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -21,73 +22,122 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.modulap.nidosano.R
 import com.modulap.nidosano.ui.components.ButtonPrimary
-import com.modulap.nidosano.ui.components.StyledTextField // <-- ¡Importa tu StyledTextField!
-import com.modulap.nidosano.ui.theme.OrangePrimary
+import com.modulap.nidosano.ui.components.StyledTextField
 import com.modulap.nidosano.ui.theme.TextGray
-import com.modulap.nidosano.ui.theme.TextTitleOrange
-import com.modulap.nidosano.ui.theme.White
-import com.modulap.nidosano.ui.viewmodel.AuthViewModel
+import com.modulap.nidosano.viewmodel.UserUpdateViewModel
+import com.modulap.nidosano.viewmodel.UserViewModel
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(
     navController: NavHostController,
     onBackClick: () -> Unit = {},
-    authViewModel: AuthViewModel = viewModel()
-) {
-    // Estados para los campos de texto
-    var name by remember { mutableStateOf("Alicia") } // Valor inicial de la imagen
-    var surnames by remember { mutableStateOf("Vázquez Fuentes") } // Valor inicial de la imagen
-    var phoneNumber by remember { mutableStateOf("477009988") } // Valor inicial de la imagen
-    var email by remember { mutableStateOf("alicia@gmail.com") } // Valor inicial de la imagen
+    userId: String,
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
-        // Top Bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.White)
-                .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start
-        ) {
-            IconButton(onClick = onBackClick) {
-                Icon(
-                    painter = painterResource(id = R.drawable.angulo_izquierdo),
-                    contentDescription = "Volver atrás",
-                    tint = TextGray,
-                    modifier = Modifier.size(28.dp)
-                )
+) {
+    val userViewModel: UserViewModel = viewModel(key = userId)
+
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    val updateViewModel: UserUpdateViewModel = viewModel()
+    val updateSuccess by updateViewModel.updateSuccess.collectAsState()
+    val updateError by updateViewModel.updateError.collectAsState()
+    val isUpdating by updateViewModel.isUpdating.collectAsState()
+
+    val state = userViewModel.state
+
+    var name by remember { mutableStateOf("") }
+    var surnames by remember { mutableStateOf("") }
+    var phoneNumber by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var originalEmail by remember { mutableStateOf("") }
+
+
+    LaunchedEffect(userId) {
+        userViewModel.clear()
+        userViewModel.loadUser(userId)
+    }
+
+
+    LaunchedEffect(state.user) {
+        state.user?.let { user ->
+            name = user.name
+            surnames = user.last_name
+            phoneNumber = user.phone_number
+            email = user.email
+            originalEmail = user.email
+        }
+    }
+
+    LaunchedEffect(updateSuccess, updateError) {
+        if (updateSuccess) {
+            val message = if (email != originalEmail) {
+                "Datos guardados. Por favor verifica tu nuevo correo electrónico."
+            } else {
+                "Datos actualizados correctamente"
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Editar perfil", // Título de la pantalla
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp,
-                    color = TextGray
-                ),
-                modifier = Modifier.weight(1f)
-            )
+
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            navController.popBackStack()
         }
 
-        // Contenido principal de edición de perfil
+        updateError?.let { error ->
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    message = error,
+                    duration = SnackbarDuration.Long
+                )
+                updateViewModel.clearUpdateState()
+            }
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBackClick) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.angulo_izquierdo),
+                        contentDescription = "Volver",
+                        tint = TextGray,
+                        modifier = Modifier.size(28.dp))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Editar perfil",
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        color = TextGray
+                    ),
+                    modifier = Modifier.weight(1f))
+            }
+        }
+    ) { innerPadding ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp)
-                .weight(1f), // Para que el botón de guardar se vaya al fondo
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 32.dp),
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(32.dp)) // Espacio superior
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Campo de Nombre
             StyledTextField(
                 label = "Nombre",
-                placeholder = "Alicia",
+                placeholder = "Nombre",
                 value = name,
                 onValueChange = { name = it }
             )
@@ -96,7 +146,7 @@ fun EditProfileScreen(
             // Campo de Apellidos
             StyledTextField(
                 label = "Apellidos",
-                placeholder = "Vázquez Fuentes",
+                placeholder = "Apellidos",
                 value = surnames,
                 onValueChange = { surnames = it }
             )
@@ -105,38 +155,67 @@ fun EditProfileScreen(
             // Campo de Teléfono
             StyledTextField(
                 label = "Teléfono",
-                placeholder = "477009988",
+                placeholder = "Teléfono",
                 value = phoneNumber,
                 onValueChange = { phoneNumber = it },
                 keyboardType = KeyboardType.Phone
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Campo de Correo electrónico
+            // Campo de Email
             StyledTextField(
                 label = "Correo electrónico",
-                placeholder = "alicia@gmail.com",
+                placeholder = "Correo electrónico",
                 value = email,
                 onValueChange = { email = it },
                 keyboardType = KeyboardType.Email
             )
-            Spacer(modifier = Modifier.height(32.dp)) // Espacio antes del botón
+            Spacer(modifier = Modifier.height(32.dp))
 
+            // Botón Guardar
             ButtonPrimary(
-                text = "Guardar",
+                text = if (isUpdating) "Guardando..." else "Guardar",
                 onClick = {
-                    // TODO: Implementar lógica para guardar los cambios
-                    navController.popBackStack() // Volver a la pantalla anterior (Perfil)
+                    if (name.isBlank() || surnames.isBlank() || phoneNumber.isBlank() || email.isBlank()) {
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = "Por favor completa todos los campos",
+                                duration = SnackbarDuration.Short
+                            )
+                        }
+                        return@ButtonPrimary
+                    }
+
+                    if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = "Ingresa un correo electrónico válido",
+                                duration = SnackbarDuration.Short
+                            )
+                        }
+                        return@ButtonPrimary
+                    }
+
+                    updateViewModel.updateUserData(
+                        userId = userId,
+                        name = name,
+                        lastName = surnames,
+                        phoneNumber = phoneNumber,
+                        email = email
+                    )
                 },
-                modifier = Modifier.fillMaxWidth() // Usa el modifier aquí
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isUpdating
             )
         }
     }
 }
 
-
 @Preview(showBackground = true)
 @Composable
 fun PreviewEditProfileScreen() {
-    EditProfileScreen(navController = rememberNavController())
+    EditProfileScreen(
+        navController = rememberNavController(),
+        userId = "usuarioEjemplo"
+    )
 }

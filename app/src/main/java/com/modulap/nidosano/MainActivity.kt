@@ -34,6 +34,8 @@ import com.modulap.nidosano.ui.screens.tips.*
 import com.modulap.nidosano.ui.theme.NidoSanoTheme
 import com.modulap.nidosano.viewmodel.SecurityViewModel
 import com.modulap.nidosano.viewmodel.SharedMqttViewModel
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 
 class MainActivity : ComponentActivity() {
     companion object {
@@ -49,6 +51,8 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
 
+        //val currentUserId = Firebase.auth.currentUser?.uid
+
         setContent {
             NidoSanoTheme {
                 val view = LocalView.current
@@ -59,7 +63,9 @@ class MainActivity : ComponentActivity() {
                     WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = true
                 }
 
-                NidoSanoApp(startDestination = destinationFromNotification)
+               // NidoSanoApp(startDestination = destinationFromNotification)
+                NidoSanoAppWrapper(startDestination = destinationFromNotification)
+
             }
         }
     }
@@ -77,7 +83,7 @@ class MainActivity : ComponentActivity() {
 
 @RequiresApi(Build.VERSION_CODES.N)
 @Composable
-fun NidoSanoApp(startDestination: String?) {
+fun NidoSanoApp(startDestination: String?, userId: String?) {
     val navController = rememberNavController()
     val sharedMqttViewModel: SharedMqttViewModel = viewModel()
 
@@ -136,13 +142,43 @@ fun NidoSanoApp(startDestination: String?) {
             )
         }
         composable(Routes.EditProfile) {
-            EditProfileScreen(
-                navController = navController,
-                onBackClick = { navController.popBackStack() }
-            )
+            if (userId != null) {
+                EditProfileScreen(
+                    navController = navController,
+                    userId = userId,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
         }
+        composable(Routes.Password) { EditPasswordScreen(navController) }
+
         composable(Routes.Tips) { TipsScreen(navController) }
-        composable(Routes.Notification) { NotificationScreen(navController) }
+        composable(
+            "tipDetail/{title}/{recomendation}/{measures}/{type}",
+            arguments = listOf(
+                navArgument("title") { type = NavType.StringType },
+                navArgument("recomendation") { type = NavType.StringType },
+                navArgument("measures") { type = NavType.StringType },
+                navArgument("type") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val title = backStackEntry.arguments?.getString("title") ?: ""
+            val recomendation = backStackEntry.arguments?.getString("recomendation") ?: ""
+            val measures = backStackEntry.arguments?.getString("measures") ?: ""
+            val type = backStackEntry.arguments?.getString("type") ?: ""
+
+            TipDetailScreen(title, recomendation, measures, type,  onBackClick = { navController.popBackStack() })
+        }
+
+        composable(Routes.Notification) {
+            if (userId != null) {
+                NotificationScreen(
+                    navController = navController,
+                    userId = userId,
+                    coopId = "defaultChickenCoop"
+                )
+            }
+        }
         composable(Routes.History) {
             HistorialScreen(
                 navController = navController,

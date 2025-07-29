@@ -131,9 +131,9 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                     val user = userDoc.toObject(User::class.java)
 
                     if (user != null) {
-                        val chickenCoopDoc = firestore.collection("users").document(userId)
-                            .collection("chicken_coop").document("defaultChickenCoop").get().await()
-                        val chickenCoopId = chickenCoopDoc.id
+                        //val chickenCoopDoc = firestore.collection("users").document(userId)
+                        //    .collection("chicken_coop").document("defaultChickenCoop").get().await()
+                       // val chickenCoopId = chickenCoopDoc.id
 
                         //saveUserDataToPrefs(userId, user.name, user.last_name, user.email, chickenCoopId)
 

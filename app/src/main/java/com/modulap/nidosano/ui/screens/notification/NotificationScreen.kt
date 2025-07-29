@@ -1,5 +1,11 @@
 package com.modulap.nidosano.ui.screens.notification
 import androidx.compose.foundation.Image
+import androidx.compose.material.icons.filled.InvertColors
+import androidx.compose.material.icons.filled.DirectionsRun
+import androidx.compose.material.icons.filled.Thermostat
+import androidx.compose.material.icons.filled.WaterDrop
+
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,9 +48,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.modulap.nidosano.R
+import com.modulap.nidosano.data.model.Notification
 import com.modulap.nidosano.ui.components.BottomNavBar
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
+import androidx.compose.material.icons.filled.Air
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.Eco
+import androidx.compose.ui.draw.clip
+
 
 import com.modulap.nidosano.ui.theme.TextGray // Gris para el texto general
 import com.modulap.nidosano.ui.theme.TextTitleOrange // Naranja para el título
@@ -51,37 +68,26 @@ import com.modulap.nidosano.ui.theme.AlertGreenBg // Para alertas de éxito
 import com.modulap.nidosano.ui.theme.AlertRedBg // Para alertas de error/críticas
 import com.modulap.nidosano.ui.theme.AlertYellowBg // Para alertas de advertencia (similar a BackgroundCream/OrangeLight en otras pantallas)
 import com.modulap.nidosano.ui.theme.AlertNeutralBg // Para alertas generales/informativas (fondo de tarjeta ligero)
+import com.modulap.nidosano.viewmodel.NotificationViewModel
 
-
-// Modelo de datos para una Alerta
-data class Alert(
-    val type: AlertType,
-    val title: String,
-    val description: String?,
-    val time: String
-)
-
-enum class AlertType {
-    OPTIMAL,      // Verde: Ambiente óptimo
-    CRITICAL,     // Rojo: Condiciones críticas
-    UNUSUAL,      // Gris/Blanco: Actividad inusual
-    UPDATED,      // Gris/Blanco: Datos del cuidador actualizados
-    WARNING       // Naranja: Alto nivel de humedad
-}
 
 @Composable
-fun NotificationScreen(navController: NavHostController) {
-    var currentRoute by remember { mutableStateOf("notification") }
-    val context = LocalContext.current
+fun NotificationScreen(
+    navController: NavHostController,
+    userId: String,
+    coopId: String,
 
-    // Datos de ejemplo
-    val alerts = listOf(
-        Alert(AlertType.OPTIMAL, "El ambiente es óptimo para las gallinas.", null, "10:00AM"),
-        Alert(AlertType.CRITICAL, "¡Condiciones críticas detectadas en el gallinero!", null, "9:30AM"),
-        Alert(AlertType.UNUSUAL, "Actividad inusual detectada en el gallinero.", "Se detectó movimiento fuera del horario habitual.", "9:00AM"),
-        Alert(AlertType.UPDATED, "Datos del cuidador actualizados", "La información del perfil se ha guardado correctamente. Actualización de contraseña realizada.", "9:00AM"),
-        Alert(AlertType.WARNING, "¡Atención! Alto nivel de humedad en el ambiente.", null, "9:00AM")
-    )
+    viewModel: NotificationViewModel = viewModel()
+) {
+
+    var currentRoute by remember { mutableStateOf("notification") }
+
+    val state = viewModel.state
+    LaunchedEffect(Unit) {
+        viewModel.loadNotifications(userId, coopId)
+
+    }
+
 
     Scaffold(
         modifier = Modifier.background(Color.White),
@@ -143,8 +149,11 @@ fun NotificationScreen(navController: NavHostController) {
                     .padding(horizontal = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(alerts) { alert ->
-                    AlertCard(alert = alert)
+                items(state.notification) { notification ->
+
+                    AlertCard(notification = notification)
+
+
                 }
             }
         }
@@ -152,66 +161,83 @@ fun NotificationScreen(navController: NavHostController) {
 }
 
 @Composable
-fun AlertCard(alert: Alert) {
-    val (backgroundColor, iconColor, iconPainter) = when (alert.type) {
-        AlertType.OPTIMAL -> Triple(AlertGreenBg, TextGray, painterResource(id = R.drawable.campana)) // Shield check for optimal
-        AlertType.CRITICAL -> Triple(AlertRedBg, TextGray, rememberVectorPainter(Icons.Filled.Warning)) // Warning for critical
-        AlertType.UNUSUAL -> Triple(AlertNeutralBg, TextGray, rememberVectorPainter(Icons.Filled.Info)) // Info for unusual
-        AlertType.UPDATED -> Triple(AlertNeutralBg, TextGray, rememberVectorPainter(Icons.Filled.Info)) // Info for updated
-        AlertType.WARNING -> Triple(AlertYellowBg, TextGray, rememberVectorPainter(Icons.Filled.Warning)) // Warning for warning
+fun AlertCard(notification: Notification) {
+    val (backgroundColor, iconColor, iconPainter) = when (notification.type.uppercase().trim()) {
+        "HUMEDAD" -> Triple(AlertYellowBg, MaterialTheme.colorScheme.primary, rememberVectorPainter(Icons.Filled.InvertColors))
+        "MOVIMIENTO" -> Triple(AlertYellowBg, MaterialTheme.colorScheme.primary, rememberVectorPainter(Icons.Filled.DirectionsRun))
+        "TEMPERATURA" -> Triple(AlertRedBg, MaterialTheme.colorScheme.error, rememberVectorPainter(Icons.Filled.Thermostat))
+        "CALIDAD DEL AIRE" -> Triple(AlertGreenBg, MaterialTheme.colorScheme.secondary, rememberVectorPainter(Icons.Filled.Air))
+
+        "ALIMENTACIÓN" -> Triple(AlertGreenBg, MaterialTheme.colorScheme.secondary, rememberVectorPainter(Icons.Filled.WaterDrop))
+        else -> Triple(AlertNeutralBg, MaterialTheme.colorScheme.onSurfaceVariant, rememberVectorPainter(Icons.Filled.Info))
     }
 
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .height(if (alert.description != null) 120.dp else 80.dp),
-        shape = RoundedCornerShape(12.dp),
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
     ) {
-        Row(
+        Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(16.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    painter = iconPainter,
-                    contentDescription = null,
-                    tint = iconColor,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = alert.title,
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)  // Tamaño del fondo circular (icono + padding)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(iconColor.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = iconPainter,
+                        contentDescription = null,
+                        tint = iconColor,
+                        modifier = Modifier.size(32.dp)
                     )
-                    alert.description?.let {
-                        Spacer(modifier = Modifier.height(4.dp))
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = notification.title,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        ),
+                        maxLines = 1
+                    )
+
+                    if (notification.description.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = it,
+                            text = notification.description,
                             style = MaterialTheme.typography.bodyMedium.copy(
-                                fontSize = 13.sp,
-                                color = TextGray
-                            )
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
+                            maxLines = 3
                         )
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             Text(
-                text = alert.time,
+                text = notification.time,
                 style = MaterialTheme.typography.bodySmall.copy(
-                    fontSize = 12.sp,
-                    color = TextGray // Color para la hora
+                    color = MaterialTheme.colorScheme.outline,
+                    fontWeight = FontWeight.SemiBold
                 ),
-                modifier = Modifier.padding(start = 8.dp),
+                modifier = Modifier.fillMaxWidth(),
                 maxLines = 1
             )
         }

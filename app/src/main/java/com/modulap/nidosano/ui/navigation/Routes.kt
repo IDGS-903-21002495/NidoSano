@@ -16,4 +16,6 @@ object Routes {
     const val Register = "register"
     const val Tips = "tips"
     const val DetailWithArgs = "history_detail_screen/{date}"
+    //
+    const val Password = "edit_password"
 }
