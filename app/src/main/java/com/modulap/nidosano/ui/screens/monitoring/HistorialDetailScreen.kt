@@ -29,6 +29,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import com.modulap.nidosano.R
@@ -46,7 +48,8 @@ fun HistorialDetailScreen(
     coopId: String,
     date: String,
     navController: NavHostController,
-    viewModel: HourlyViewModel = viewModel()
+    viewModel: HourlyViewModel = viewModel(),
+    onBackClick: () -> Unit = {},
 ) {
     LaunchedEffect(Unit) {
         viewModel.loadHourlyData(userId, coopId, date)
@@ -64,7 +67,7 @@ fun HistorialDetailScreen(
                 .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { navController.popBackStack() }) {
+            IconButton(onClick = onBackClick) {
                 Icon(
                     painter = painterResource(id = R.drawable.angulo_izquierdo),
                     contentDescription = "Atrás",
@@ -86,22 +89,22 @@ fun HistorialDetailScreen(
 
         // Texto de la fecha debajo de la barra superior
         Text(
-            text = date, // Solo la fecha
-            style = MaterialTheme.typography.titleMedium.copy( // Cambiado a titleMedium
-                fontWeight = FontWeight.SemiBold, // Un poco más delgado que Bold para un subtítulo
-                fontSize = 18.sp, // Tamaño de fuente consistente con el resto del subtítulo
-                color = TextGray // Utilizando TextGray para un color secundario
+            text = date,
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 18.sp,
+                color = TextGray
             ),
-            modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 16.dp) // Ajustado el padding para estar más alineado y dar espacio
+            modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 16.dp)
         )
-
-        // Spacer(modifier = Modifier.height(16.dp)) // Este Spacer ahora es redundante debido al padding del Text de la fecha
 
         if (viewModel.isLoading) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 16.dp)
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {

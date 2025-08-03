@@ -40,6 +40,8 @@ import com.modulap.nidosano.ui.theme.GreenSuccess
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
+import com.modulap.nidosano.ui.components.ButtonPrimary
+import com.modulap.nidosano.ui.navigation.Routes
 import com.modulap.nidosano.ui.theme.TextTitleOrange
 import com.modulap.nidosano.viewmodel.SecurityViewModel
 
@@ -189,6 +191,15 @@ fun SecurityScreen(
                     }
                 }
             }
+
+            // 💡 El botón se ha movido fuera del Box para evitar la superposición
+            Spacer(modifier = Modifier.height(32.dp))
+
+            ButtonPrimary(
+                onClick = { navController.navigate(Routes.SetMonitoringSchedule) },
+                text = "Configurar horario de monitoreo",
+                modifier = Modifier.padding(horizontal = 32.dp)
+            )
 
             Spacer(modifier = Modifier.height(32.dp))
 

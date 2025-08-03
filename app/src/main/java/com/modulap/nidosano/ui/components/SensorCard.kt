@@ -37,7 +37,7 @@ fun SensorCard(titulo: String, valor: String, iconId: Int) {
         elevation = CardDefaults.cardElevation(4.dp),
         modifier = Modifier
             .width(140.dp)
-            .height(70.dp)
+            .height(90.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

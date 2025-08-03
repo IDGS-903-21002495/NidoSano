@@ -1,5 +1,6 @@
 package com.modulap.nidosano.ui.screens.auth
 
+import android.os.Build
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -28,6 +29,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.modulap.nidosano.data.repository.MQTTManagerHiveMQ
 import com.modulap.nidosano.ui.navigation.Routes
 import com.modulap.nidosano.ui.viewmodel.AuthViewModel
 
@@ -42,6 +44,7 @@ fun LoginScreen(
     val isLoading by authViewModel.isLoading.collectAsState()
     val loginSuccess by authViewModel.loginSuccess.collectAsState() // Observar el éxito del login
     val errorMessage by authViewModel.errorMessage.collectAsState()
+    val currentUser by authViewModel.userIdFlow.collectAsState()
 
     // Estados para los campos de entrada
     var email by remember { mutableStateOf("") }
@@ -51,6 +54,13 @@ fun LoginScreen(
     LaunchedEffect(loginSuccess) {
         if (loginSuccess) {
             Toast.makeText(context, "Inicio de sesión exitoso.", Toast.LENGTH_SHORT).show()
+
+            currentUser?.let { userId ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    MQTTManagerHiveMQ.conectar(userId)
+                }
+            }
+
             // Navegar a la pantalla de inicio después del login exitoso
             navController.navigate(Routes.Home) {
                 popUpTo(Routes.Login) { inclusive = true } // Limpia la pila para evitar regresar al login

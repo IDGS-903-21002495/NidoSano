@@ -5,6 +5,10 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.modulap.nidosano.data.firebase.FirestoreManager
+import com.modulap.nidosano.data.model.CommandStatus
+import com.modulap.nidosano.data.model.FeedingSchedule
+import com.modulap.nidosano.data.model.MonitoringSchedule
 import com.modulap.nidosano.data.repository.MQTTManagerHiveMQ
 import com.modulap.nidosano.data.repository.MqttMessage
 import kotlinx.coroutines.Dispatchers
@@ -13,18 +17,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 @RequiresApi(Build.VERSION_CODES.N)
 class SharedMqttViewModel : ViewModel() {
 
     // --- Estado de Conexión ---
-    private val _connectionStatus = MutableStateFlow(MQTTManagerHiveMQ.ConnectionState.CONNECTING)
+    private val _connectionStatus = MutableStateFlow(MQTTManagerHiveMQ.ConnectionState.DISCONNECTED)
     val connectionStatus: StateFlow<MQTTManagerHiveMQ.ConnectionState> = _connectionStatus.asStateFlow()
 
-    private val _connectionMessage = MutableStateFlow<String?>("Iniciando conexión MQTT...")
+    private val _connectionMessage = MutableStateFlow<String?>("Esperando conexión...")
     val connectionMessage: StateFlow<String?> = _connectionMessage.asStateFlow()
 
-    // --- Datos de los Sensores (todos como StateFlow) ---
     private val _temperature = MutableStateFlow("–")
     val temperature: StateFlow<String> = _temperature.asStateFlow()
 
@@ -37,19 +41,20 @@ class SharedMqttViewModel : ViewModel() {
     private val _lightingLevel = MutableStateFlow("–")
     val lightingLevel: StateFlow<String> = _lightingLevel.asStateFlow()
 
-    private val _movementAlertMessage = MutableStateFlow("Iniciando...")
+    private val _movementAlertMessage = MutableStateFlow("Sin detección reciente.")
     val movementAlertMessage: StateFlow<String> = _movementAlertMessage.asStateFlow()
+
+    private val _monitoringScheduleUpdated = MutableStateFlow(false)
+    val monitoringScheduleUpdated: StateFlow<Boolean> = _monitoringScheduleUpdated.asStateFlow()
 
     private val _isMovementDetected = MutableStateFlow(false)
     val isMovementDetected: StateFlow<Boolean> = _isMovementDetected.asStateFlow()
 
+    private val _feedingStatusMessage = MutableStateFlow("Esperando información de alimentación.")
+    val feedingStatusMessage: StateFlow<String> = _feedingStatusMessage.asStateFlow()
 
     init {
-        // Lanzar la conexión MQTT y comenzar a recolectar los flujos
-        Log.d("SharedMqttViewModel", "SharedMqttViewModel inicializado. Conectando MQTT y recolectando flujos.")
-        MQTTManagerHiveMQ.conectar()
-
-        // Recolectar el estado de la conexión
+        Log.d("SharedMqttViewModel", "SharedMqttViewModel inicializado. Recolectando flujos MQTT.")
         viewModelScope.launch(Dispatchers.Main) {
             MQTTManagerHiveMQ.connectionStateFlow.collectLatest { (state, message) ->
                 _connectionStatus.value = state
@@ -58,6 +63,11 @@ class SharedMqttViewModel : ViewModel() {
                 if (state == MQTTManagerHiveMQ.ConnectionState.DISCONNECTED || state == MQTTManagerHiveMQ.ConnectionState.ERROR) {
                     _isMovementDetected.value = false
                     _movementAlertMessage.value = "Conexión perdida o error."
+                    _temperature.value = "–"
+                    _humidity.value = "–"
+                    _airQuality.value = "–"
+                    _lightingLevel.value = "–"
+                    _feedingStatusMessage.value = "Conexión perdida, información de alimentación no disponible."
                 }
             }
         }
@@ -75,14 +85,24 @@ class SharedMqttViewModel : ViewModel() {
                         _movementAlertMessage.value = mqttMessage.payload
                         _isMovementDetected.value = (mqttMessage.payload.trim() != "Movimiento detectado en: 0")
                     }
+                    "feeding" -> {
+                        _feedingStatusMessage.value = "Alimentación: ${mqttMessage.payload}"
+                    }
+                    "feeding/confirmacion" -> {
+                        _feedingStatusMessage.value = "Alimentación Confirmada: ${mqttMessage.payload}"
+                    }
+                    else -> {
+                        Log.w("SharedMqttViewModel", "Tópico no reconocido o no manejado para UI: ${mqttMessage.topic}")
+                    }
                 }
             }
         }
     }
 
+
+
     override fun onCleared() {
         super.onCleared()
-        MQTTManagerHiveMQ.desconectar()
-        Log.d("SharedMqttViewModel", "SharedMqttViewModel cleared, desconectando MQTT.")
+        Log.d("SharedMqttViewModel", "SharedMqttViewModel cleared. La conexión MQTT es gestionada por el servicio.")
     }
 }

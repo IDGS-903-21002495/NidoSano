@@ -1,4 +1,5 @@
 package com.modulap.nidosano.ui.screens.notification
+
 import androidx.compose.foundation.Image
 import androidx.compose.material.icons.filled.InvertColors
 import androidx.compose.material.icons.filled.DirectionsRun
@@ -21,7 +22,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
@@ -52,23 +52,27 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.modulap.nidosano.R
-import com.modulap.nidosano.data.model.Notification
+import com.modulap.nidosano.data.model.Notification // Asegúrate de que esta importación sea correcta
 import com.modulap.nidosano.ui.components.BottomNavBar
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.Air
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Eco
 import androidx.compose.ui.draw.clip
-
-
-import com.modulap.nidosano.ui.theme.TextGray // Gris para el texto general
-import com.modulap.nidosano.ui.theme.TextTitleOrange // Naranja para el título
+import androidx.compose.ui.text.style.TextAlign
+import com.modulap.nidosano.ui.theme.TextGray
+import com.modulap.nidosano.ui.theme.TextTitleOrange
 import com.modulap.nidosano.ui.theme.AlertGreenBg // Para alertas de éxito
 import com.modulap.nidosano.ui.theme.AlertRedBg // Para alertas de error/críticas
-import com.modulap.nidosano.ui.theme.AlertYellowBg // Para alertas de advertencia (similar a BackgroundCream/OrangeLight en otras pantallas)
-import com.modulap.nidosano.ui.theme.AlertNeutralBg // Para alertas generales/informativas (fondo de tarjeta ligero)
+import com.modulap.nidosano.ui.theme.AlertYellowBg
+import com.modulap.nidosano.ui.theme.AlertNeutralBg
 import com.modulap.nidosano.viewmodel.NotificationViewModel
+
+// Importar CircularProgressIndicator
+import androidx.compose.material3.CircularProgressIndicator
 
 
 @Composable
@@ -76,18 +80,18 @@ fun NotificationScreen(
     navController: NavHostController,
     userId: String,
     coopId: String,
-
-    viewModel: NotificationViewModel = viewModel()
+    viewModel: NotificationViewModel = viewModel() // Mantén la inyección de dependencia del ViewModel
 ) {
-
     var currentRoute by remember { mutableStateOf("notification") }
 
-    val state = viewModel.state
+    // Observar el 'state' directamente desde tu NotificationViewModel
+    val uiState = viewModel.state // Esto observará los cambios en 'state' gracias a 'by mutableStateOf'
+
+
     LaunchedEffect(Unit) {
+        // Cargar las notificaciones cuando el Composable se inicializa
         viewModel.loadNotifications(userId, coopId)
-
     }
-
 
     Scaffold(
         modifier = Modifier.background(Color.White),
@@ -97,9 +101,7 @@ fun NotificationScreen(
                 navController.navigate(route) {
                     launchSingleTop = true
                     restoreState = true
-                    popUpTo(navController.graph.startDestinationId) {
-                        saveState = true
-                    }
+                    popUpTo(route) { inclusive = true }
                 }
             }
         }
@@ -132,7 +134,7 @@ fun NotificationScreen(
                 // Icono de perfil (derecha)
                 IconButton(onClick = { navController.navigate("profile") }) {
                     Icon(
-                        imageVector = Icons.Filled.AccountCircle,
+                        painter = painterResource(id = R.drawable.circulo_de_usuario),
                         contentDescription = "Perfil",
                         tint = TextGray,
                         modifier = Modifier.size(28.dp)
@@ -142,18 +144,42 @@ fun NotificationScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Lista de Alertas (LazyColumn para rendimiento)
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(state.notification) { notification ->
-
-                    AlertCard(notification = notification)
-
-
+            when {
+                uiState.isLoading -> {
+                    // Muestra el indicador de carga en el centro mientras se obtienen los datos
+                    Box(
+                        modifier = Modifier.fillMaxSize(), // Ocupa todo el espacio restante
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(48.dp)
+                        )
+                    }
+                }
+                uiState.notification.isEmpty() -> {
+                    // Muestra un mensaje si no hay notificaciones y no está cargando ni hay error
+                    Text(
+                        text = "No hay notificaciones para mostrar.",
+                        style = MaterialTheme.typography.bodyLarge.copy(color = TextGray),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+                else -> {
+                    // Muestra la lista de notificaciones si hay datos y no está cargando
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 32.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(uiState.notification) { notification ->
+                            AlertCard(notification = notification)
+                        }
+                    }
                 }
             }
         }

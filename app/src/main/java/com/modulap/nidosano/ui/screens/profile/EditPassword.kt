@@ -54,7 +54,7 @@ import kotlinx.coroutines.launch
                  modifier = Modifier
                      .fillMaxWidth()
                      .background(Color.White)
-                     .padding(horizontal = 16.dp, vertical = 12.dp),
+                     .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 12.dp),
                  verticalAlignment = Alignment.CenterVertically
              ) {
                  IconButton(onClick = onBackClick) {

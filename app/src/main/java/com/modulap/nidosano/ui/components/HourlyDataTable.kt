@@ -64,8 +64,7 @@ fun HourlyDataTable(records: List<HourlyRecord>) {
 
         LazyColumn(
             modifier = Modifier.fillMaxWidth()
-
-                .height(250.dp)
+                .padding(bottom = 24.dp)
         ) {
             itemsIndexed(records) { index, record ->
                 Card(

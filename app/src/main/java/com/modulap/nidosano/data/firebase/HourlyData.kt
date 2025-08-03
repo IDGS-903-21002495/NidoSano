@@ -22,7 +22,7 @@ suspend fun getHourlyDataForDate(userId: String, coopId: String, date: String): 
 
     return snapshot.documents
         .mapNotNull { doc ->
-            val timestamp = doc.getTimestamp("date")?.toDate() ?: return@mapNotNull null
+            val timestamp = doc.getTimestamp("timestamp")?.toDate() ?: return@mapNotNull null
             if (SimpleDateFormat("yyyy-MM-dd").format(timestamp) != date) return@mapNotNull null
 
             val hourStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(timestamp)

@@ -5,8 +5,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
@@ -35,9 +37,10 @@ import com.modulap.nidosano.ui.theme.White
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.modulap.nidosano.ui.navigation.Routes
 import com.modulap.nidosano.ui.viewmodel.AuthViewModel
-//import com.modulap.nidosano.ui.viewmodel.KEY_USER_NAME
-//
-
+import androidx.compose.runtime.collectAsState // Importar collectAsState
+import androidx.compose.runtime.getValue // Importar getValue
+import com.modulap.nidosano.ui.viewmodel.KEY_USER_NAME // Importar las claves
+import com.modulap.nidosano.ui.viewmodel.KEY_USER_LAST_NAME // Importar las claves
 
 @Composable
 fun ProfileScreen(
@@ -45,12 +48,16 @@ fun ProfileScreen(
     onBackClick: () -> Unit = {},
     authViewModel: AuthViewModel = viewModel()
 ) {
-    // Obtener los datos del usuario de SharedPreferences
-    //val userData = authViewModel.getUserDataFromPrefs()
+    // Observar los StateFlows del ViewModel
+    val userName by authViewModel.currentUserName.collectAsState()
+    val userLastName by authViewModel.currentUserLastName.collectAsState()
 
-    //val userName = userData[KEY_USER_NAME] ?: "Usuario"
-    //val userLastName = userData[KEY_USER_LAST_NAME] ?: ""
-    //val displayName = if (userLastName.isNotBlank()) "$userName $userLastName" else userName // Combinar
+    // Combinar para mostrar
+    val displayName = if (!userName.isNullOrBlank() || !userLastName.isNullOrBlank()) {
+        "${userName.orEmpty()} ${userLastName.orEmpty()}".trim()
+    } else {
+        "Usuario" // Valor por defecto si ambos son nulos/vacíos
+    }
 
     Column(
         modifier = Modifier
@@ -88,26 +95,26 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 32.dp)
-                .weight(1f),
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
             Image(
-                painter = painterResource(id = R.drawable.gan),
+                painter = painterResource(id = R.drawable.pollo_1_),
                 contentDescription = "Foto de Perfil",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .size(120.dp)
+                    .size(125.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primary)
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Mostrar nombre y apellido combinados
             Text(
-                text = "Nombre de usuarios",
+                text = displayName,
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.Bold,
                     color = TextGray
@@ -120,13 +127,7 @@ fun ProfileScreen(
                 text = "Editar perfil",
                 onClick = { navController.navigate("edit_profile")}
             )
-            Spacer(modifier = Modifier.height(16.dp))
 
-            ProfileMenuItem(
-                icon = Icons.Filled.Notifications,
-                text = "Notificaciones",
-                onClick = { /* TODO: Navegar a pantalla de notificaciones */ }
-            )
             Spacer(modifier = Modifier.height(16.dp))
 
             ProfileMenuItem(
@@ -134,12 +135,13 @@ fun ProfileScreen(
                 text = "Cambiar contraseña",
                 onClick = {navController.navigate("edit_password") }
             )
+
             Spacer(modifier = Modifier.height(16.dp))
 
             ProfileMenuItem(
-                icon = Icons.AutoMirrored.Filled.ArrowBack,
-                text = "Historial",
-                onClick = { navController.navigate("history") }
+                icon = Icons.Filled.Notifications,
+                text = "Notificaciones",
+                onClick = { navController.navigate(Routes.Notification) }
             )
 
             Spacer(modifier = Modifier.height(32.dp))

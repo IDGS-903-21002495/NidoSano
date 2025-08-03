@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
@@ -12,15 +13,14 @@ import com.google.firebase.firestore.FieldValue
 import com.modulap.nidosano.data.model.User
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 const val PREFS_NAME = "NidoSanoPrefs"
-//const val KEY_USER_ID = "userId"
-//const val KEY_USER_NAME = "userName"
-//const val KEY_USER_LAST_NAME = "userLastName"
-//const val KEY_CHICKEN_COOP_ID = "chickenCoopId"
-//const val KEY_USER_EMAIL = "userEmail"
+const val KEY_USER_ID = "userId"
+const val KEY_USER_NAME = "userName"
+const val KEY_USER_LAST_NAME = "userLastName"
 
 class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -39,6 +39,40 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
+
+    private val _isAuthenticated = MutableStateFlow(false)
+    val isAuthenticated: StateFlow<Boolean> = _isAuthenticated
+
+    private val _userIdFlow = MutableStateFlow<String?>(null)
+    val userIdFlow: StateFlow<String?> = _userIdFlow.asStateFlow()
+
+    // Nuevo StateFlow para los datos del usuario (nombre y apellido)
+    private val _currentUserName = MutableStateFlow<String?>(null)
+    val currentUserName: StateFlow<String?> = _currentUserName.asStateFlow()
+
+    private val _currentUserLastName = MutableStateFlow<String?>(null)
+    val currentUserLastName: StateFlow<String?> = _currentUserLastName.asStateFlow()
+
+
+
+    init {
+        // Al iniciar el ViewModel, cargar el userId, nombre y apellido de SharedPreferences
+        val storedUserId = getUserIdFromPrefs()
+        _userIdFlow.value = storedUserId
+
+        // Cargar nombre y apellido al iniciar
+        _currentUserName.value = sharedPrefs.getString(KEY_USER_NAME, null)
+        _currentUserLastName.value = sharedPrefs.getString(KEY_USER_LAST_NAME, null)
+
+
+        if (auth.currentUser != null && storedUserId != null) {
+            _isAuthenticated.value = true
+            Log.d("AuthViewModel", "Usuario ya autenticado y userId en prefs: $storedUserId")
+        } else {
+            _isAuthenticated.value = false
+            Log.d("AuthViewModel", "Usuario no autenticado o userId no encontrado en prefs.")
+        }
+    }
 
     fun registerUser(
         name: String,
@@ -88,10 +122,14 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                         .collection("chicken_coop").document(initialChickenCoopId)
                         .set(initialChickenCoopData).await()
 
-                    //saveUserDataToPrefs(userId, name, lastName, email, initialChickenCoopId)
-
+                    saveUserIdToPrefs(userId)
+                    saveUserNameAndLastNameToPrefs(name, lastName)
+                    _userIdFlow.value = userId
+                    _currentUserName.value = name
+                    _currentUserLastName.value = lastName
                     _registrationSuccess.value = true
-                    Log.d("AuthViewModel", "Usuario registrado y datos guardados exitosamente.")
+                    _isAuthenticated.value = true
+                    Log.d("AuthViewModel", "Usuario registrado y datos guardados exitosamente. userId: $userId")
 
                 } else {
                     _errorMessage.value = "Error interno: User ID es nulo después del registro."
@@ -131,14 +169,14 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                     val user = userDoc.toObject(User::class.java)
 
                     if (user != null) {
-                        //val chickenCoopDoc = firestore.collection("users").document(userId)
-                        //    .collection("chicken_coop").document("defaultChickenCoop").get().await()
-                       // val chickenCoopId = chickenCoopDoc.id
-
-                        //saveUserDataToPrefs(userId, user.name, user.last_name, user.email, chickenCoopId)
-
+                        saveUserIdToPrefs(userId)
+                        saveUserNameAndLastNameToPrefs(user.name, user.last_name)
+                        _userIdFlow.value = userId
+                        _currentUserName.value = user.name
+                        _currentUserLastName.value = user.last_name
                         _loginSuccess.value = true
-                        Log.d("AuthViewModel", "Usuario inició sesión y datos guardados exitosamente.")
+                        _isAuthenticated.value = true
+                        Log.d("AuthViewModel", "Usuario inició sesión y datos guardados exitosamente. userId: $userId")
                     } else {
                         _errorMessage.value = "Error: No se encontraron datos de usuario en Firestore."
                         auth.signOut()
@@ -159,55 +197,50 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /*
-    private fun saveUserDataToPrefs(
-        userId: String,
-        userName: String,
-        userLastName: String,
-        userEmail: String,
-        chickenCoopId: String
-    ) {
+    private fun saveUserIdToPrefs(userId: String) {
         sharedPrefs.edit().apply {
             putString(KEY_USER_ID, userId)
-            putString(KEY_USER_NAME, userName)
-            putString(KEY_USER_LAST_NAME, userLastName)
-            putString(KEY_USER_EMAIL, userEmail)
-            putString(KEY_CHICKEN_COOP_ID, chickenCoopId)
             apply()
         }
-        Log.d("AuthViewModel", "Datos de usuario guardados en SharedPreferences: $userId, $userName $userLastName, $userEmail, $chickenCoopId")
+        Log.d("AuthViewModel", "User ID guardado en SharedPreferences: $userId")
     }
 
+    private fun saveUserNameAndLastNameToPrefs(name: String?, lastName: String?) {
+        sharedPrefs.edit().apply {
+            putString(KEY_USER_NAME, name)
+            putString(KEY_USER_LAST_NAME, lastName)
+            apply()
+        }
+        Log.d("AuthViewModel", "Nombre '$name' y Apellido '$lastName' guardados en SharedPreferences.")
+    }
 
-     */
-
-    /*
-    fun getUserDataFromPrefs(): Map<String, String?> {
+    // Método ahora privado ya que el acceso externo es a través de userIdFlow
+    private fun getUserIdFromPrefs(): String? {
         val userId = sharedPrefs.getString(KEY_USER_ID, null)
-        val userName = sharedPrefs.getString(KEY_USER_NAME, null)
-        val userLastName = sharedPrefs.getString(KEY_USER_LAST_NAME, null)
-        val userEmail = sharedPrefs.getString(KEY_USER_EMAIL, null)
-        val chickenCoopId = sharedPrefs.getString(KEY_CHICKEN_COOP_ID, null)
-        Log.d("AuthViewModel", "Obteniendo datos de SharedPreferences: $userId, $userName $userLastName, $userEmail, $chickenCoopId")
+        Log.d("AuthViewModel", "Obteniendo User ID de SharedPreferences: $userId")
+        return userId
+    }
+
+    fun getUserDataFromPrefs(): Map<String, String?> {
         return mapOf(
-            KEY_USER_ID to userId,
-            KEY_USER_NAME to userName,
-            KEY_USER_LAST_NAME to userLastName,
-            KEY_USER_EMAIL to userEmail,
-            KEY_CHICKEN_COOP_ID to chickenCoopId
+            KEY_USER_ID to sharedPrefs.getString(KEY_USER_ID, null),
+            KEY_USER_NAME to sharedPrefs.getString(KEY_USER_NAME, null),
+            KEY_USER_LAST_NAME to sharedPrefs.getString(KEY_USER_LAST_NAME, null)
         )
     }
 
-
-     */
     fun clearUserDataFromPrefs() {
         sharedPrefs.edit().clear().apply()
+        _userIdFlow.value = null
+        _currentUserName.value = null // Limpiar también los valores del nombre y apellido
+        _currentUserLastName.value = null
         Log.d("AuthViewModel", "Datos de usuario eliminados de SharedPreferences.")
     }
 
     fun logoutUser() {
         auth.signOut()
         clearUserDataFromPrefs()
+        _isAuthenticated.value = false
         Log.d("AuthViewModel", "Sesión cerrada y SharedPreferences limpiadas.")
         _loginSuccess.value = false
         _registrationSuccess.value = false
@@ -223,5 +256,47 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearLoginSuccess() {
         _loginSuccess.value = false
+    }
+
+    fun updateUserNameAndLastName(userId: String, newName: String, newLastName: String) {
+        _isLoading.value = true
+        _errorMessage.value = null
+
+        if (userId.isBlank()) {
+            _errorMessage.value = "Error: User ID no válido."
+            _isLoading.value = false
+            return
+        }
+        if (newName.isBlank() || newLastName.isBlank()) {
+            _errorMessage.value = "El nombre y el apellido no pueden estar vacíos."
+            _isLoading.value = false
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val userRef = firestore.collection("users").document(userId)
+                userRef.update(
+                    mapOf(
+                        "name" to newName,
+                        "last_name" to newLastName
+                    )
+                ).await()
+
+                saveUserNameAndLastNameToPrefs(newName, newLastName) // Actualizar SharedPreferences
+                _currentUserName.value = newName // Actualizar StateFlow
+                _currentUserLastName.value = newLastName // Actualizar StateFlow
+
+                Log.d("AuthViewModel", "Nombre y apellido actualizados en Firestore y SharedPreferences.")
+                Toast.makeText(getApplication(), "Perfil actualizado correctamente", Toast.LENGTH_SHORT).show() // Feedback visual
+
+            } catch (e: Exception) {
+                _errorMessage.value = "Error al actualizar el perfil: ${e.localizedMessage ?: "Desconocido"}"
+                Log.e("AuthViewModel", "Error updating user name/last name: ${e.message}", e)
+                Toast.makeText(getApplication(), "Error al actualizar perfil", Toast.LENGTH_SHORT).show() // Feedback visual
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
 }

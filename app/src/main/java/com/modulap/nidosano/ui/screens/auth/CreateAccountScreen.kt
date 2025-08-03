@@ -1,8 +1,10 @@
 package com.modulap.nidosano.ui.screens.auth
 
+import android.os.Build
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +23,7 @@ import com.modulap.nidosano.ui.theme.OrangePrimary
 import com.modulap.nidosano.ui.theme.TextGray
 import com.modulap.nidosano.ui.theme.White
 import androidx.compose.foundation.text.ClickableText
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
@@ -29,6 +32,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.modulap.nidosano.R
+import com.modulap.nidosano.data.repository.MQTTManagerHiveMQ
 import com.modulap.nidosano.ui.navigation.Routes
 import com.modulap.nidosano.ui.viewmodel.AuthViewModel
 
@@ -44,6 +48,7 @@ fun CreateAccountScreen(
     val isLoading by authViewModel.isLoading.collectAsState()
     val registrationSuccess by authViewModel.registrationSuccess.collectAsState()
     val errorMessage by authViewModel.errorMessage.collectAsState()
+    val currentUser by authViewModel.userIdFlow.collectAsState()
 
     // Estados para los campos de entrada
     var name by remember { mutableStateOf("") }
@@ -54,8 +59,16 @@ fun CreateAccountScreen(
 
 
     // Efecto para manejar el éxito del registro
-    LaunchedEffect(registrationSuccess) {
+    LaunchedEffect(registrationSuccess, currentUser) {
         if (registrationSuccess) {
+
+
+            currentUser?.let { userId ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    MQTTManagerHiveMQ.conectar(userId)
+                }
+            }
+
             Toast.makeText(context, "Cuenta creada exitosamente.", Toast.LENGTH_SHORT).show()
             navController.navigate(Routes.Home) {
                 popUpTo(Routes.Login) { inclusive = true }
@@ -111,7 +124,8 @@ fun CreateAccountScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 32.dp)
-                .weight(1f),
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {

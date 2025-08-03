@@ -15,61 +15,62 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import com.modulap.nidosano.ui.components.BottomNavBar
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.modulap.nidosano.R
 import com.modulap.nidosano.data.repository.MQTTManagerHiveMQ
 import com.modulap.nidosano.ui.components.ButtonPrimary
 import com.modulap.nidosano.ui.theme.OrangePrimary
 import com.modulap.nidosano.ui.theme.TextGray
 import com.modulap.nidosano.ui.theme.TextTitleOrange
-import androidx.lifecycle.viewmodel.compose.viewModel // Importar viewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
-import com.modulap.nidosano.viewmodel.SharedMqttViewModel // Importar SharedMqttViewModel
+import com.modulap.nidosano.viewmodel.SharedMqttViewModel
 
 @RequiresApi(Build.VERSION_CODES.N)
 @Composable
 fun MonitoringScreen(
     navController: NavHostController,
-    viewModel: SharedMqttViewModel = viewModel() // Inyecta SharedMqttViewModel aquí
+    viewModel: SharedMqttViewModel = viewModel()
 ) {
     var currentRoute by remember { mutableStateOf("home") }
     val context = LocalContext.current
 
-    // --- Observa los StateFlows del SharedMqttViewModel ---
     val temperature by viewModel.temperature.collectAsState()
     val humidity by viewModel.humidity.collectAsState()
     val airQuality by viewModel.airQuality.collectAsState()
     val lightingLevel by viewModel.lightingLevel.collectAsState()
     val connectionStatus by viewModel.connectionStatus.collectAsState()
 
-    // Envuelto en remember para asegurar que se recalcule cuando connectionStatus cambie
     val generalStatusMessage = remember(connectionStatus) {
         Log.d("MonitoringScreen", "Calculating generalStatusMessage for status: $connectionStatus")
         when (connectionStatus) {
-            MQTTManagerHiveMQ.ConnectionState.CONNECTED -> "Todo en orden"
+            MQTTManagerHiveMQ.ConnectionState.CONNECTED -> "Conectado. Todo en orden."
             MQTTManagerHiveMQ.ConnectionState.CONNECTING -> "Conectando al gallinero..."
             MQTTManagerHiveMQ.ConnectionState.DISCONNECTED -> "Desconectado del gallinero."
-            MQTTManagerHiveMQ.ConnectionState.ERROR -> "Error de conexión con el gallinero."
+            MQTTManagerHiveMQ.ConnectionState.ERROR -> "Error de conexión al gallinero."
         }
     }
 
-    // Lógica para el color del mensaje de estado general
     val generalStatusColor = remember(connectionStatus) {
         when (connectionStatus) {
             MQTTManagerHiveMQ.ConnectionState.CONNECTED -> OrangePrimary
-            else -> TextGray // O un color de advertencia si prefieres para desconectado/error
+            MQTTManagerHiveMQ.ConnectionState.CONNECTING -> Color(0xFFFFA500) // Naranja para conectando (opcional)
+            MQTTManagerHiveMQ.ConnectionState.DISCONNECTED -> Color.Red
+            MQTTManagerHiveMQ.ConnectionState.ERROR -> Color.Red
         }
     }
 
-    // ** OTRO PUNTO CLAVE DE DEPURACIÓN **
-    LaunchedEffect(connectionStatus) {
-        // Este efecto se lanzará cada vez que connectionStatus cambie
+    LaunchedEffect(connectionStatus, generalStatusMessage) {
         Log.d("MonitoringScreen", "LaunchedEffect: connectionStatus changed to $connectionStatus. Displayed message: $generalStatusMessage")
     }
 
@@ -108,7 +109,6 @@ fun MonitoringScreen(
                     modifier = Modifier.padding(start = 16.dp)
                 )
 
-                // Spacer para empujar el icono de perfil a la derecha
                 Spacer(modifier = Modifier.weight(1f))
 
                 // Icono de perfil (derecha)
@@ -122,28 +122,32 @@ fun MonitoringScreen(
                 }
             }
 
+            Text(
+                text = generalStatusMessage,
+                style = MaterialTheme.typography.bodyMedium,
+                color = generalStatusColor,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp, vertical = 4.dp),
+                textAlign = Alignment.CenterHorizontally.toString().let { TextAlign.Center }
+            )
+
             // Contenido principal de la pantalla de monitoreo
             Column (
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp), // Mantener el padding horizontal para el contenido
+                    .padding(horizontal = 16.dp)
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ){
-                Text(
-                    text = "Recuerda revisar los bebederos si la temperatura supera los 30 °C",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.DarkGray,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
 
-                // Espacio entre la recomendación y el botón "Ver historial"
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ){
-                    // Botón de historial
                     ButtonPrimary(
                         text = "Ver historial",
                         onClick = {
@@ -155,7 +159,6 @@ fun MonitoringScreen(
 
                 Spacer(modifier = Modifier.height(42.dp))
 
-                // Imagen del gallinero
                 Image(
                     painter = painterResource(id = R.drawable.gan2),
                     contentDescription = "Gallinero",
@@ -166,7 +169,6 @@ fun MonitoringScreen(
 
                 Spacer(modifier = Modifier.height(42.dp))
 
-                // Tarjetas de sensores
                 Column (
                     modifier = Modifier
                         .fillMaxWidth()
@@ -179,8 +181,8 @@ fun MonitoringScreen(
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        SensorCard("Calidad del aire", airQuality, R.drawable.calor) // Usar airQuality
-                        SensorCard("Iluminación", lightingLevel, R.drawable.eclipse) // Usar lightingLevel
+                        SensorCard("Calidad del aire", airQuality, R.drawable.calor)
+                        SensorCard("Iluminación", lightingLevel, R.drawable.eclipse)
                     }
                 }
 

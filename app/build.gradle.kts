@@ -62,8 +62,8 @@ dependencies {
     implementation("androidx.compose.ui:ui-text-google-fonts:1.8.1")
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-messaging-ktx")
-    implementation ("androidx.compose.material:material-icons-extended:<version>")
-
+    implementation("androidx.compose.material:material-icons-extended:<version>")
+    implementation("com.google.code.gson:gson:2.13.1")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

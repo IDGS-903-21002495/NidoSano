@@ -56,8 +56,7 @@ fun SplashScreen(navController: NavHostController){
             horizontalAlignment = Alignment.CenterHorizontally
         ){
             Image(
-                painter = painterResource(id = R.drawable.gallina),
-                colorFilter = ColorFilter.tint(Color.White),
+                painter = painterResource(id = R.drawable.pollo),
                 contentDescription = "Logo NidoSano",
                 modifier = Modifier.size(180.dp),
             )

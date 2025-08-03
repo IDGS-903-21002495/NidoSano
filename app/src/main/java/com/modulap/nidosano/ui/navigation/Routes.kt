@@ -15,7 +15,7 @@ object Routes {
     const val EditProfile = "edit_profile"
     const val Register = "register"
     const val Tips = "tips"
+    const val SetMonitoringSchedule = "set_monitoring_schedule"
     const val DetailWithArgs = "history_detail_screen/{date}"
-    //
     const val Password = "edit_password"
 }

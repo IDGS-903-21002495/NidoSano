@@ -22,7 +22,7 @@ suspend fun getLastDailySummaries(
         .collection("chicken_coop")
         .document(coopId)
         .collection("sensors")
-        .orderBy("date", com.google.firebase.firestore.Query.Direction.DESCENDING) // más nuevo primero
+        .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING) // más nuevo primero
         .get()
         .await()
 
@@ -30,7 +30,7 @@ suspend fun getLastDailySummaries(
     val summaries = mutableListOf<DailySummary>()
 
     for (doc in snapshot.documents) {
-        val timestamp = doc.getTimestamp("date") ?: continue
+        val timestamp = doc.getTimestamp("timestamp") ?: continue
         val temperature = doc.getDouble("temperature") ?: continue
         val humidity = doc.getDouble("humidity") ?: continue
         val airQuality = doc.getString("air_quality") ?: "-"
@@ -41,7 +41,7 @@ suspend fun getLastDailySummaries(
         if (seenDates.add(dateStr)) {
             summaries.add(
                 DailySummary(
-                    date = dateStr,
+                    timestamp = dateStr,
                     temperature = String.format("%.1f°C", temperature),
                     humidity = String.format("%.1f%%", humidity),
                     airQuality = airQuality,

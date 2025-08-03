@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
@@ -40,6 +42,7 @@ import com.modulap.nidosano.ui.theme.TextGray
 @Composable
 fun HistorialScreen(
     navController: NavHostController,
+    onBackClick: () -> Unit = {},
     userId: String,
     coopId: String,
     onViewMoreClick: (String) -> Unit,
@@ -58,22 +61,17 @@ fun HistorialScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Barra Superior Personalizada (Top Bar)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.White) // Mantener este fondo blanco para la consistencia
+                .background(Color.White)
                 .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = {
-                // Lógica para navegar hacia atrás
-                navController.popBackStack()
-                Log.d("HistorialScreen", "Navegando hacia atrás.")
-            }) {
+            IconButton(onClick = onBackClick) {
                 Icon(
                     painter = painterResource(id = R.drawable.angulo_izquierdo),
-                    contentDescription = "Regresar",
+                    contentDescription = "Atrás",
                     tint = TextGray,
                     modifier = Modifier.size(28.dp)
                 )
@@ -83,20 +81,21 @@ fun HistorialScreen(
                 text = "Historial",
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp, // **Ya tiene el fontSize correcto**
-                    color = TextGray // **Ya tiene el color correcto**
+                    fontSize = 20.sp,
+                    color = TextGray
                 )
             )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Contenido principal (Tabla o mensajes de estado)
         if (state.isLoading) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 16.dp), // Márgenes laterales para el contenido
+                    .padding(horizontal = 16.dp)
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -115,7 +114,7 @@ fun HistorialScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 16.dp), // Márgenes laterales para el contenido
+                    .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {

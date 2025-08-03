@@ -1,25 +1,21 @@
 package com.modulap.nidosano.ui.screens.profile
 
 import androidx.compose.runtime.*
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.modulap.nidosano.NidoSanoApp
+import com.modulap.nidosano.ui.viewmodel.AuthViewModel
 
 @Composable
 fun NidoSanoAppWrapper(startDestination: String?) {
-    var currentUser by remember { mutableStateOf(Firebase.auth.currentUser) }
+    // Obtener la instancia del AuthViewModel
+    val authViewModel: AuthViewModel = viewModel()
+    val currentUserId by authViewModel.userIdFlow.collectAsState()
 
-    DisposableEffect(Unit) {
-        val listener = FirebaseAuth.AuthStateListener { auth ->
-            currentUser = auth.currentUser
-        }
-        Firebase.auth.addAuthStateListener(listener)
+    // val isAuthenticated by authViewModel.isAuthenticated.collectAsState()
 
-        onDispose {
-            Firebase.auth.removeAuthStateListener(listener)
-        }
-    }
-
-    NidoSanoApp(startDestination = startDestination, userId = currentUser?.uid)
+    // Pasar el userId a NidoSanoApp
+    NidoSanoApp(startDestination = startDestination, userId = currentUserId)
 }

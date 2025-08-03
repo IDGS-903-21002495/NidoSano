@@ -56,7 +56,7 @@ fun SummaryTable(summaries: List<DailySummary>, onViewMoreClick: (String) -> Uni
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
                 TableHeaderText(text = "Fecha", modifier = Modifier.weight(1.5f))
-                TableHeaderText(text = "Temperatura", modifier = Modifier.weight(1f))
+                TableHeaderText(text = "Temp.", modifier = Modifier.weight(1f))
                 TableHeaderText(text = "Humedad", modifier = Modifier.weight(1f))
                 TableHeaderText(text = "Acciones", modifier = Modifier.weight(1.2f), textAlign = TextAlign.Center)
             }
@@ -82,7 +82,7 @@ fun SummaryTable(summaries: List<DailySummary>, onViewMoreClick: (String) -> Uni
                 ) {
 
                     TableDataText(
-                        text = summary.date,
+                        text = summary.timestamp,
                         modifier = Modifier.weight(1.5f),
                         color = TextTitleOrange,
                         isDate = true,
@@ -100,7 +100,7 @@ fun SummaryTable(summaries: List<DailySummary>, onViewMoreClick: (String) -> Uni
                     )
 
                     Button(
-                        onClick = { onViewMoreClick(summary.date) },
+                        onClick = { onViewMoreClick(summary.timestamp) },
                         modifier = Modifier
                             .weight(1.2f)
                             .height(36.dp),
